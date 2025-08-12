@@ -6,7 +6,7 @@ resolver = "3"
 authors = ["butterflysky <bright.art1794@fastmail.com>"]
 description = "Part of a collection of practice exercises I'm doing to learn Rust"
 edition = "2024"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 version = "0.1.0"
 
 [workspace.dependencies]
