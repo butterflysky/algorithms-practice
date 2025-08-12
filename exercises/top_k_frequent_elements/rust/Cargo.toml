@@ -1,0 +1,9 @@
+[package]
+name = "top_k_frequent_elements"
+edition = "2024"
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
