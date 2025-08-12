@@ -12,7 +12,7 @@ impl Error for InputError {}
 
 impl fmt::Display for InputError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match  self {
+        match self {
             Self::StringTooLong() => write!(f, "input string too long (> 100 chars)"),
             Self::CharOutOfRange() => write!(f, "char out of bounds (not [a-z])"),
         }
@@ -22,7 +22,9 @@ impl fmt::Display for InputError {
 fn gen_freq_map(s: &str) -> Result<[u8; 26], InputError> {
     let mut map = [0u8; 26];
 
-    if s.len() > 100 { return Err(InputError::StringTooLong()); }
+    if s.len() > 100 {
+        return Err(InputError::StringTooLong());
+    }
 
     for &b in s.as_bytes() {
         if !(b'a'..=b'z').contains(&b) {
@@ -86,15 +88,16 @@ mod tests {
 
     // property tests and helpers
 
-
-    
     // properties i want to test:
     //   - partition - output is a permutation (by multiset) of input
     //   - groups - all strings in each group share the same frequency map, and each group's frequency map is unique
     //   - concatenation - group(A ++ B) == merge(group(A), group(B)) by frequency map
 
     fn lower_ascii_vec() -> impl Strategy<Value = Vec<String>> {
-        prop::collection::vec(proptest::string::string_regex("[a-z]{0,100}").unwrap(), 0..1000)
+        prop::collection::vec(
+            proptest::string::string_regex("[a-z]{0,100}").unwrap(),
+            0..1000,
+        )
     }
 
     proptest! {
