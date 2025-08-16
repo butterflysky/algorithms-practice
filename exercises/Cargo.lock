@@ -238,6 +238,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "string_encode_and_decode"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+]
+
+[[package]]
 name = "syn"
 version = "2.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
