@@ -27,11 +27,11 @@ fn gen_freq_map(s: &str) -> Result<[u8; 26], InputError> {
     }
 
     for &b in s.as_bytes() {
-        if !(b'a'..=b'z').contains(&b) {
+        if !b.is_ascii_lowercase() {
             return Err(InputError::CharOutOfRange());
         }
 
-        map[(b - b'a') as usize] = map[(b - b'a') as usize] + 1;
+        map[(b - b'a') as usize] += 1;
     }
     Ok(map)
 }
