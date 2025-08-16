@@ -28,7 +28,7 @@ impl fmt::Display for DecodeError {
                 f.write_str("String payload cut off before expected length")
             },
             Self::Utf8(e) => {
-                f.write_str(format!("UTF-8 Parsing error: {}", e).as_str())
+                write!(f, "UTF-8 Parsing error: {}", e)
             }
         }
     }
