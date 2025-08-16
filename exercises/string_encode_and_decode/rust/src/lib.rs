@@ -114,7 +114,7 @@ mod tests {
 
     fn get_simple_test_tuple() -> (Vec<String>, String, String) {
         let input = vec!["hi".to_owned(), "there".to_owned()];
-        (input.clone(), "\02\0hi\05\0there".to_owned(), encode(input))
+        (input.clone(), "\x002\x00hi\x005\x00there".to_owned(), encode(input))
     }
 
     #[test]
@@ -143,7 +143,7 @@ mod tests {
         let result = encode(vec!["".to_owned()]);
         let mut expected: String = String::with_capacity(3);
 
-        expected.push_str("\00\0");
+        expected.push_str("\x000\x00");
 
         assert_eq!(expected.len(), 3);
         assert_eq!(result, expected);
