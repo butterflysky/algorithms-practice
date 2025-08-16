@@ -1,3 +1,9 @@
+//! String encoding and decoding utilities.
+//!
+//! Provides functions to encode a collection of strings into a single string,
+//! and decode it back into the original collection.
+//!
+//! This is derived from a Neetcode 150 exercise.
 mod errors;
 
 pub use errors::DecodeError;
@@ -8,14 +14,48 @@ enum DecoderState {
     ReadingString,
 }
 
+/// Encodes an iterator of strings into a single [`String`] with length markers.
+///
+/// Each input string is prefixed by:
+/// - a sentinel,
+/// - its length, and
+/// - another sentinel,
+/// followed by the string contents.
+///
+/// This scheme allows lossless round-trip encoding.
+///
+/// # Type Parameters
+///
+/// * `I` - An iterator type implementing [`IntoIterator`] whose items implement [`AsRef<str>`].
+///
+/// # Arguments
+///
+/// * `strs` - An iterator of items convertible to string slices (type `I` as described above)
+///
+/// # Returns
+///
+/// An encoded [`String`] containing all input strings.
+///
+/// # Examples
+///
+/// ```rust
+/// use string_encode_and_decode::encode;
+/// let input = vec!["foo", "bar"];
+/// let encoded = encode(input);
+/// ```
 pub fn encode<I, T>(strs: I) -> String
 where
     I: IntoIterator<Item = T>,
     I::IntoIter: ExactSizeIterator,
     T: AsRef<str> + std::fmt::Debug,
 {
+    // exercise constrains the number of strings in the list to 100,
+    // and the length of those UTF-8 strings to 200 characters.
+    //
     // this is overkill if we have short strings, but all told, a
-    // max strs length of 100 * 200 * 4 bytes is 80KiB, negligible.
+    // max strs length of 100 * 200 * 4 bytes is 80KiB, negligible,
+    // so I'm reserving all of that capacity to avoid having to grow allocs
+    // as I go.
     let it = strs.into_iter();
     let mut encoded_string = String::with_capacity(it.len() * 200 * 4);
 
@@ -28,14 +68,51 @@ where
     encoded_string
 }
 
+/// Decodes a string produced by [`encode`] back into a vector of strings.
+///
+/// The encoded input must follow the format produced by [`encode`]: each string is
+/// prefixed by a sentinel (`\0`), its length as ASCII digits, another sentinel (`\0`),
+/// and then the string's UTF-8 bytes.
+///
+/// # Type Parameters
+///
+/// * `I` - Any type that can be referenced as a string slice (`AsRef<str>`).
+///
+/// # Arguments
+///
+/// * `in_str` - The encoded string to decode.
+///
+/// # Returns
+///
+/// * `Ok(Vec<String>)` containing the decoded strings if successful.
+/// * `Err(DecodeError)` if the input is malformed or cannot be decoded.
+///
+/// # Errors
+///
+/// Returns a [`DecodeError`] if:
+/// - The sentinel or length markers are missing or malformed.
+/// - The encoded length is not a valid number.
+/// - The string is truncated or contains invalid UTF-8.
+/// - The length marker overflows or is inconsistent with the data.
+///
+/// # Examples
+///
+/// ```rust
+/// use string_encode_and_decode::{encode, decode};
+/// let input = vec!["foo", "bar"];
+/// let encoded = encode(input.clone());
+/// let decoded = decode(encoded).unwrap();
+/// assert_eq!(input, decoded);
+/// ```
 pub fn decode<I>(in_str: I) -> Result<Vec<String>, DecodeError>
 where
     I: AsRef<str> + std::fmt::Debug,
 {
+    // magic numbers here are derived from exercise constraints
     let mut out: Vec<String> = Vec::with_capacity(100);
-
     let mut current_string = Vec::<u8>::with_capacity(200);
-    let mut expected_len: usize = 0;
+
+    let mut expected_len = 0;
 
     let mut state: DecoderState = DecoderState::SeekingSentinel;
 
@@ -43,7 +120,6 @@ where
         match state {
             DecoderState::SeekingSentinel => {
                 if *b != 0 {
-
                     return Err(DecodeError::SentinelNotFound());
                 }
                 // this is the starting null, on to reading length
@@ -112,9 +188,13 @@ mod tests {
     use proptest::collection::vec;
     use proptest::prelude::*;
 
-    fn get_simple_test_tuple() -> (Vec<String>, String, String) {
-        let input = vec!["hi".to_owned(), "there".to_owned()];
-        (input.clone(), "\x002\x00hi\x005\x00there".to_owned(), encode(input))
+    fn get_simple_test_tuple() -> (Vec<&'static str>, String, String) {
+        let input = vec!["hi", "there"];
+        (
+            input.clone(),
+            "\x002\x00hi\x005\x00there".to_owned(),
+            encode(input),
+        )
     }
 
     #[test]
@@ -140,7 +220,7 @@ mod tests {
 
     #[test]
     fn validate_encode_with_single_empty_string() {
-        let result = encode(vec!["".to_owned()]);
+        let result = encode(vec![""]);
         let mut expected: String = String::with_capacity(3);
 
         expected.push_str("\x000\x00");
@@ -151,7 +231,7 @@ mod tests {
 
     #[test]
     fn validate_decode_with_single_empty_string() {
-        let input = vec!["".to_owned()];
+        let input = vec![""];
         let result = decode(encode(input.clone())).unwrap();
 
         assert_eq!(input, result);

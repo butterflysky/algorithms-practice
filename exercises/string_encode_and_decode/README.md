@@ -4,32 +4,35 @@ Design an algorithm to encode a list of strings to a single string. The encoded 
 
 Please implement encode and decode
 
-Constraints:
+## Constraints
 
-0 <= strs.length < 100
-0 <= strs[i].length < 200
-strs[i] contains only UTF-8 characters
+* 0 <= strs.length < 100
+* 0 <= strs[i].length < 200
+* strs[i] contains only UTF-8 characters
 
-Aim for O(m) time with O(m+n) space for each encode() and decode() call, where m is the sum of lengths of all the strings and n is the number of strings
+## Target
 
-## My thoughts
+Aim for O(m) time with O(m+n) space for each encode() and decode() call, where:
+* m is the sum of lengths of all the strings
+* n is the number of strings
 
-* Any character I might use a delimeter might be in the strings. I could use multiple characters. I should probably include the length of the string in the delimiter. Maybe (\0 + str.len().to_string() + \0) as a delimiter?
-* Rust doesn't let you arbitrarily index into strings, as internally they are variable-width UTF-8 bytes over a Vec<u8> buffer - you wouldn't be able to accurately parse whatever grapheme you land on if you land in the middle. And String.nth() is O(n) each time because of this too - if you want the nth character, you have to parse each character up to it.
-* Allocating a fixed 4-byte buffer for each char is a waste of space
-* So that's why I want to try a delimiter-based approach with length encoded inside.
-* Decoding is going to need to iterate over each character once, so it will have to iteratively build up each string and keep track of the expected length. It seems like a state machine would come in handy here.
+## Thought Process
 
-## Testing
+### First attempt
 
-I'll implement a property test to make sure that for any valid input ```strs: Vector<String>```,
+* Using a delimiter character to separate strings is tricky, since any character could appear in the input. To avoid ambiguity, I plan to encode the length of each string as part of the delimiter.
+    * For example, I could use something like `(\0 + str.len().to_string() + \0)` before each string.
+* In Rust, strings are UTF-8 encoded, so you can't index directly into them by character. Operations like `String.nth()` are O(n) because you have to walk through the string to find the nth character.
+* Allocating a fixed-size buffer for each character (like 4 bytes per char) would waste space.
+* That's why I'm considering a delimiter-based approach with the string length encoded.
+* For decoding, I'll need to scan the encoded string byte by byte, extract each length, and then read that many bytes for each string. This is essentially a simple state machine.
 
-```rust
-decode(encode(strs)) == strs
-```
+### Decoding edge case
 
-And my first go is yielding a failure for [""] - it's not giving back an empty string, it's giving back nothing at all.
-## Other
+* My first implementation failed for the input `[""]` (a single empty string): decoding returned an empty list instead of a list with one empty string. I need to handle empty strings correctly.
 
-I decided to implement my own error types and put them in a separate module. I also decided to experiment with making the functions able to accept vectors or arrays, essentially anything that implements IntoIterator, of types that can be made into string references, or rather, types that implement AsRef<str> - I'm not initially going to implement tests for different types, just playing with it for learning. But I may come back and revise later when I'm not prepping for interviews.
+## Implementation Notes
+
+* I implemented custom error types in a separate module.
+* The `encode` and `decode` functions are generic: they accept any type that implements `IntoIterator`, and the items can be converted to string references (`AsRef<str>`). This allows flexibility for different input types.
 
